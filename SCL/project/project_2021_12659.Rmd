@@ -1,0 +1,250 @@
+---
+title: "project_2021_12659"
+output:
+  html_document: default
+  pdf_document: default
+date: "2022-12-17"
+---
+```{r}
+library(tidyverse)
+library(hms)
+library(lubridate)
+library(modelr)
+options(na.action = na.warn)
+
+dir <- ("C:\\Workspace\\scl\\final")
+file_list <- list.files(dir)
+```
+
+
+
+# Q1
+```{r}
+file_list_demo <- file_list[str_detect(file_list, "DEMO")]
+demo <- data.frame()
+for (file in file_list_demo){
+  temp <- haven::read_xpt(paste(dir, file, sep ="\\"))
+  demo <- bind_rows(demo, temp)
+}
+
+demo <- demo %>% select(SEQN, RIAGENDR, RIDAGEYR, RIDRETH3)  
+
+demo$RIAGENDR <- as.factor(demo$RIAGENDR)
+demo$RIDRETH3 <- as.factor(demo$RIDRETH3)
+
+demo_count <- demo %>% group_by(RIDRETH3) %>% summarise(count = n()) %>% arrange(desc(count))
+demo$RIDRETH3 <- factor(demo$RIDRETH3, levels = demo_count$RIDRETH3)
+demo <- demo %>% arrange(RIDRETH3)
+```
+
+# Q2
+```{r}
+demo %>% ggplot(aes(x = RIDRETH3, y = RIDAGEYR, color = RIAGENDR)) +
+  geom_boxplot()
+```
+
+#Q3
+```{r}
+bp_mean <- function(x){
+  try(x <- as.numeric(x), silent =  TRUE)
+  x <- ifelse(x == 0, runif(1, 1, 10), x)
+  (x <- na.omit(x))
+  if (length(x) >= 3) {
+    mean(x)
+  }
+  else{
+   NA 
+  }
+}
+test <- c(0, 50, 80, 130, NA, "a")
+test2 <- c(3, 5, NA)
+bp_mean(test)
+bp_mean(test2)
+```
+
+# Q4
+
+```{r}
+bp_high <- function(detail, mean1, mean2){
+  ifelse(is.na(mean1), NA, ifelse(is.na(mean2), NA,
+    if (detail == "high"){
+      ifelse(mean1 >= 130 | mean2 >= 80, TRUE, FALSE)
+    }
+    else if(detail == "low") {
+      ifelse(mean1 <= 90| mean2 <= 60, TRUE, FALSE)
+    }))
+  }
+
+bp_high(detail = "high", c(82.2777, 100, NA), c(2.5, 800, NA))
+bp_high(detail = "low", NA, 100)
+```
+
+# Q5
+```{r}
+file_list_bpx <- file_list[str_detect(file_list, "BPX")]
+bpx <- data.frame()
+for (file in file_list_bpx){
+  temp <- haven::read_xpt(paste(dir, file, sep ="\\"))
+  bpx <- bind_rows(bpx, temp)
+}
+
+bpx1 <- bpx %>% select(BPXSY1, BPXSY2, BPXSY3, BPXSY4) #%>% mutate(mean_dia = apply(bpx11, bp_mean))
+bpx$mean_sys = apply(bpx1, 1, bp_mean)
+
+bpx2 <- bpx %>% select(BPXDI1, BPXDI2, BPXDI3, BPXDI4)
+bpx$mean_dia = apply(bpx2, 1, bp_mean)
+
+bpx <- bpx %>% mutate(hyperten = bp_high(detail = "high", mean_sys, mean_dia), 
+         hypoten = bp_high(detail = "low", mean_sys, mean_dia))
+
+count_bpx <- bpx %>% group_by(hyperten, hypoten) %>% summarise(count = n())
+count_bpx
+```
+고혈압 6508명, 저혈압 6150명, 고혈압이면서 동시에 저혈압인 사람 764명이다.
+
+# Q6
+
+```{r}
+file_list_dpq <- file_list[str_detect(file_list, "DPQ")]
+dpq <- data.frame()
+for (file in file_list_dpq){
+  temp <- haven::read_xpt(paste(dir, file, sep ="\\"))
+  dpq <- bind_rows(dpq, temp)
+}
+
+dpq[dpq == 7] <- NA
+dpq[dpq == 9] <- NA
+dpq1 <- select(dpq, num_range("DPQ", seq(10, 90, by = 10), width = 3))
+dpq$sum = rowSums(dpq1, na.rm = T)
+dpq$severity <- cut(dpq$sum, 
+                    breaks = c(0, 4, 9, 14, 19, 27), 
+                    right = TRUE, 
+                    labels = c("None-minimal", "Mild", "Moderate", "Moderately Severe", "Severe"),
+                    include.lowest =  TRUE)
+table(dpq$severity)
+```
+
+# Q7
+
+```{r}
+slq1314 <- haven::read_xpt("SLQ_H.XPT") %>% select(SEQN, SLD010H, SLQ050) %>% rename( "SLD012"= "SLD010H")
+slq1516 <- haven::read_xpt("SLQ_I.XPT") %>% select(SEQN, SLD012, SLQ050, SLQ300, SLQ310)
+slq1718 <- haven::read_xpt("SLQ_J.XPT") %>% select(SEQN, SLD012, SLQ050, SLQ300, SLQ310)
+slq <- full_join(slq1314, slq1516)
+slq <- full_join(slq, slq1718)
+
+
+slq$SLQ300[slq$SLQ300 == 99999] <- NA
+slq$SLQ300[slq$SLQ300 == 77777] <- NA
+slq$SLQ300 <- parse_time(slq$SLQ300)
+
+slq$SLQ310[slq$SLQ310 == 99999] <- NA
+slq$SLQ310[slq$SLQ310 == 77777] <- NA
+slq$SLQ310 <- parse_time(slq$SLQ310)
+
+slq$SLQ050[slq$SLQ050 == 9] <- NA
+slq$SLQ050[slq$SLQ050 == 7] <- NA
+slq$SLQ050 <- ifelse(slq$SLQ050 == 1, 'Yes', ifelse(slq$SLQ050 == 2, 'No', NA))
+slq$SLQ050 <- as.factor(slq$SLQ050)
+summary(slq)
+
+```
+
+# Q8
+```{r}
+outlier <- slq %>% filter(SLQ310 == SLQ300)
+slq %>% ggplot(aes(x = SLQ310, y = SLQ300)) + geom_point(position = "jitter") + geom_point(size = 3, shape = 1,color = "blue", data = outlier, stroke = 2) 
+
+```
+
+기상시간과 취침시간이 동일하기 때문이다.
+
+# Q9
+```{r}
+slq <- slq %>% mutate(sleeptime = ifelse(SLQ310 >= SLQ300, 
+                             abs(SLQ310 - SLQ300)/3600, (parse_time("24:00") - SLQ300 + SLQ310)/3600)) 
+
+slq %>% filter(SLD012 < 50) %>% ggplot(aes(x = SLD012, y = sleeptime)) + geom_point() + geom_smooth()
+
+```
+수면시간이 99시간인 이상치 제거하였다.
+평소 수면시간과 거의 일치하였습니다.
+
+# Q10
+```{r}
+slq2 <- slq %>% rename("sleep" = "SLQ300", "wake" = "SLQ310") %>% gather(sleep, wake, key = 'sleep/wake', value = 'time') %>% na.omit() %>% group_by(time, `sleep/wake`, SLQ050) %>% summarise(mean = mean(sleeptime))
+slq2 %>% ggplot(aes(x = time, y= mean)) + 
+  geom_point(aes(color = `sleep/wake`)) + 
+  facet_wrap(vars(SLQ050)) +
+  labs(title = "수면 장애 여부에 따라 수면기간이 기상/취침시각과 맺는 관계", x = "기상 및 취침 시간", y = "평균 수면시간")
+
+```
+한 사람의 기상시간과 취침사간을 분리하였기 때문에 동일한 삶에 대한 둘 간의 관계를 파악하기 어렵다.
+또한, 이상치에 주의해야 한다.
+
+# Q11
+```{r}
+file_list_bmx <- file_list[str_detect(file_list, "BMX")]
+bmx <- data.frame()
+for (file in file_list_bmx){
+  temp <- haven::read_xpt(paste(dir, file, sep ="\\"))
+  bmx <- bind_rows(bmx, temp)
+}
+
+bmx <- bmx %>% select(SEQN, BMXBMI) %>% inner_join(demo) %>% inner_join(bpx) %>% inner_join(slq) %>% inner_join(dpq)
+nrow(bmx)
+```
+17192명의 응답자가 포함되었다.
+
+
+# Q12
+```{r}
+bmx$RIAGENDR <- as.factor(bmx$RIAGENDR)
+bmx$RIAGENDR <- ifelse(bmx$RIAGENDR == 1, 'Male', ifelse(bmx$RIAGENDR == 2, 'Female', NA))
+bmx %>% ggplot(aes(x = mean_sys, y = BMXBMI)) + geom_point() + facet_wrap(vars(RIDRETH3)) + geom_smooth(method = "lm") +
+  labs(title = "인종별 수축기혈압과 체질량의 관계", x = "평균 수축기혈압", y = "체질량지수")
+```
+
+6인종 모두 체질량지수와 평균 수축기 혈압간의 양의 상관관계를 보였다. 체질량지수와 수축기 혈압간에는 분명한 관계가 존재할 것으로 보인다.
+그래프에서 또한 주목할만한 점은 인종 6(Non-Hispanic Asian)의 체질량 지수가 다른 인종에 비해 눈에띄게 낮은 분포를 보였다는 것이다.
+그리고 각 인종마다 수축기 혈압의 분포는 유사해보인다. 따라서 인종과 수축기 혈압은 모종의 관계가 있으리라 생각하지 않는다.
+
+```{r}
+
+bmx %>% ggplot(aes(x = RIDAGEYR, y = mean_sys, color = RIAGENDR)) + geom_point(alpha = 0.5) + geom_smooth(method = "lm") + labs(x = "나이", y = "수축기혈압", title =  "성별별 나이와 수축기혈압의 관계", color = "성별")
+
+
+```
+성별에 따른 수축기 혈압은 60대 미만에선 남성이 높았으나, 60대가 넘어가면서 여성의 수축기 혈압이 급격히 상승하는 모습을 보였다.
+또한 나이가 증가함에 따라 수축기 혈압 역시 상승하는 모습을 보인다.
+
+```{r}
+bmx %>% ggplot(aes(x = severity, y = mean_sys, color = SLQ050)) + geom_boxplot() + stat_summary(fun.y="mean", geom="point", shape=22, size=3) +
+  labs(title = "우울증 정도와 수면장애 여부에 따른 수축기 혈압", x = " 우울증 정도", y = "수축기 혈압", col = "수면장애 여부")
+
+```
+
+우울증이 심하다고해서 수축기 혈압이 높은 것은 아니었다. 우울증 그룹은 모두 거의 비슷한 분포를 보였다.
+하지만, 수면장애와 수축기 혈압은 주목할만한 관계가 있다 생각한다. moderately severe 그룹을 제외하고, 모두 수면장애가 있는 그룹의 평균적인 수축기 혈압이 높았으며, IQR의 범위 역시 수면장애가 있는 그룹이 높게 나타났다. 
+
+# Q13
+```{r}
+bmx <- bmx %>% mutate(lsys = log2(mean_sys), lbmi = log2(BMXBMI))
+mod_bmx <- lm(lsys ~ lbmi, data = bmx)
+grid <- bmx %>% data_grid(BMXBMI = seq_range(BMXBMI, 5)) %>%
+  mutate(lbmi = log2(BMXBMI)) %>%
+  add_predictions(mod_bmx, "lsys") %>% 
+  mutate(mean_sys = 2 ^ lsys)
+
+ggplot(bmx, aes(BMXBMI, mean_sys)) + 
+  geom_hex(bins = 50) + 
+  geom_line(data = grid, colour = "red", size = 1)
+```
+```{r}
+grid <- bmx %>% 
+  data_grid(lbmi, .model = mod_bmx) %>% 
+  add_predictions(mod_bmx)
+grid
+```
+
+

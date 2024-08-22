@@ -1,0 +1,353 @@
+---
+title: "326.212 Homework 3"
+output: html_document
+date: "2022-11-08"
+---
+
+## 2021-12659
+
+# Prerequisites
+```{r}
+library(tidyverse)
+library(nycflights13)
+library(stringr)
+library(lubridate)
+```
+
+
+# Textbook 13.2.1
+## Problem 1
+flights 와 airports table을 합칠 수있습니다. 그리고 flights에서는 각 비행기마다의 origin(출발지)와 dest(도착지) 변수가 airports에서는 lon(경도)와 lat(위도) 변수가 필요합니다.
+
+# Textbook 13.3.1
+## Problem 2
+### 1
+```{r}
+Lahman::Batting %>% count(playerID, yearID, stint) %>% filter(n > 1)
+```
+playerID, yearID, stint
+
+### 2
+```{r}
+babynames::babynames %>% count(name, year, sex) %>% filter(n > 1)
+```
+name, year, sex
+
+### 3
+```{r}
+nasaweather::atmos %>% count(lat, long, year, month) %>% filter(n > 1)
+```
+lat, long, year, month
+
+```{r}
+fueleconomy::vehicles %>% count(id) %>% filter(n > 1)
+```
+id
+
+### 5
+```{r}
+diamonds
+```
+
+```{r}
+ggplot2::diamonds %>% count(clarity, depth, color, clarity, carat, cut, table, price)%>% filter(n > 1)
+```
+없다고 생각합니다.
+
+
+# Textbook 13.4.6
+## Problem 3
+```{r}
+flights %>% group_by(tailnum) %>% summarize(delay = mean(arr_delay, na.rm = T)) %>% inner_join(select(planes, tailnum, year), by = "tailnum") %>% mutate(age = year(today()) - year) %>% ggplot(mapping = aes(x = delay, y = age)) + geom_point() + geom_smooth()
+```
+
+비행기의 나이와 delay에는 별다른 관계가 있다고 생각하지 않습니다.
+
+# Textbook 13.5.1
+## Problem 1
+```{r}
+flights %>% filter(is.na(tailnum))
+```
+tailnum이 NA인 값들만 필터링했더니 dep_time도 NA가 나왔습니다. 
+
+```{r}
+flights %>% filter(is.na(tailnum), !is.na(arr_time))
+
+```
+
+tailnum이 NA이고 arr_time이 NA가 아닌 값을 필터링 했더니 0개 였습니다.
+
+flights 데이터에서 tailnum이 NA인 값들은 비행기가 출발하지 않았음을 의미합니다.
+```{r}
+flights %>%
+  anti_join(planes, by = "tailnum")
+```
+
+flights에 기록된 tailnum이 plane에 없는 경우에 대해 carrier에서 AA와 MQ가 많이 보였습니다.
+
+```{r}
+flights %>%
+  anti_join(planes, by = "tailnum") %>% count(carrier, sort = T)
+```
+
+plane과 일치하는 tailnum이 없는 경운느 항공사가 MQ 또는 AA인 경우가 거의 대부분이었습니다.
+
+
+# Textbook 14.2.5
+## Problem 2
+
+
+```{r}
+str_c(c("x", "y", "z"), sep = ", ")
+str_c(c("x", "y", "z"), collapse = ", ")
+
+str_c("x", "y", "z", sep = ",")
+str_c("x", "y", "z", collapse = ",")
+
+str_c(c("x", "y", "z"), "A", sep = ",")
+str_c(c("x", "y", "z"), "A", collapse = ",")
+str_c(c("x", "y", "z"), "A", sep =",", collapse = ",")
+```
+
+sep은 입력된 값들 사이에 삽입되는 문자열이다. 그리고 벡터화된 값에 대해서는 길이가 짧은 요소를 반복하여 길이가 가장 긴 벡터만큼의 문자열을 만든다. 하지만 collapase는 하나의 문자열로 결합시키고 요소들을 구분하기 위해 사용되는 문자열이다. 
+
+# Textbook 14.3.1.1
+## Problem 1
+“\\"은 다음 문자를 escape합다.
+”\\\\” 은 정규표현식에서 인식되어 다음문자를 escape합니다. 
+“\\\\\\"은 \은 정규표현식의 인식되고 r에서 다음 문자를 escape하는 걸로 인식합니다. 그래서"\\\\\\\\"가 정규표현식에서 "\\"로 사용됩니다.
+
+
+# Textbook 14.3.2.1
+## Problem 2
+### 1 
+```{r}
+str_view(words, "^y", match = T)
+```
+
+### 2
+```{r}
+str_view(words, "x$", match = T)
+```
+
+### 3
+```{r}
+str_view(words, "^...$", match = T)
+```
+ 
+### 4
+```{r}
+str_view(words, ".......", match = T)
+```
+
+
+
+
+
+# Textbook 14.3.3.1
+## Problem 3
+```{r}
+str_subset(words, "q[^u]")
+```
+words 데이터 에서는 q뒤에 u가 오지 않는 단어는 없습니다.
+
+# Textbook 14.3.4.1
+## Problem 3
+### 1
+```{r}
+str_view(words, "^[^aeiou]{3}", match = T)
+```
+
+### 2 
+```{r}
+str_view(words, "[aeiou]{3,}", match = T)
+```
+
+### 3
+```{r}
+str_view(words, "([aeiou][^aeiou]){2,}", match = T)
+```
+
+
+
+
+# Textbook 14.3.5.1
+## Problem 2
+```{r}
+str_subset(words,"^(.)((.*\\1$)|\\1?$)")
+```
+```{r}
+str_subset(words,"([A-Za-z][A-Za-z]).*\\1")
+```
+```{r}
+str_subset(words,"([A-Za-z]).*\\1.*\\1")
+```
+
+# Textbook 14.4.1.1
+## Problem 2
+```{r}
+vowel <- str_count(words, "[aeiou]")
+words[which(vowel == max(vowel))]
+```
+```{r}
+prop <- vowel / str_length(words)
+words[which(prop == max(prop))]
+```
+
+
+# Textbook 14.4.2.1
+## Problem 1
+```{r}
+colours <- c("red", "orange", "yellow", "green", "blue", "purple")
+colour_match <- str_c("\\b(", colours,")\\b" ,collapse = "|")
+more <- sentences[str_count(sentences, colour_match) > 1]
+str_view_all(more, colour_match)
+```
+
+
+# Textbook 14.4.3.1
+## Problem 1
+```{r}
+number <- "\\b(one|two|three|four|five|six|seven|eight|nine|ten) ([\\w]+)"
+has_number <- sentences %>% str_subset(number) %>% str_extract(number)
+has_number
+```
+
+
+# Textbook 14.4.4.1
+## Problem 3
+```{r}
+switched <- str_replace_all(words, "^([A-Za-z])(.*)([A-Za-z])$", "\\3\\2\\1")
+intersect(switched, words)
+
+```
+
+# Textbook 14.4.5.1
+## Problem 1
+```{r}
+str_split("apples, pears, and bananas",", ?(and )?", simplify = TRUE)
+```
+
+
+# Textbook 15.3.1
+## Problem 1
+```{r}
+ggplot(gss_cat, aes(x = rincome)) + geom_bar()
+```
+
+label들이 겹쳐져 있어 각 막대가 무엇을 나타내는 지 파악하기 어렵습니다
+
+```{r}
+ggplot(gss_cat, aes(x = rincome)) + geom_bar() + coord_flip()
+```
+
+그래프를 뒤집으면 label을 읽을 수 있습니다.
+
+# Textbook 15.4.1
+## Problem 2
+```{r}
+is.factor(gss_cat$year)
+is.factor(gss_cat$marital)
+is.factor(gss_cat$age)
+is.factor(gss_cat$race)
+is.factor(gss_cat$rincome)
+is.factor(gss_cat$partyid)
+is.factor(gss_cat$relig)
+is.factor(gss_cat$denom)
+is.factor(gss_cat$tvhours)
+```
+
+gss_cat에서 factor는 martial, rincome, partyid, relig, denom입니다.
+
+
+```{r}
+ggplot(gss_cat) + geom_bar(mapping = aes(x = marital))
+```
+
+never married, separated, divorced, widowed, married 순으로 되어 있습니다 미혼부터 결혼까지 순서로 principled 하다고 생각합니다.
+
+```{r}
+ggplot(gss_cat) + geom_bar(mapping = aes(x = rincome)) + coord_flip()
+```
+
+적은 소득 부터 많은 소득 까지 순서대로 되어있어 principled 하다고 생각합니다. 하지만 하나 이상한점은 not applicable이 맨 위에 있는 점입니다.
+
+```{r}
+ggplot(gss_cat) + geom_bar(mapping = aes(x = partyid)) + coord_flip()
+
+```
+
+strong democrat부터 strong republican 순으로 되어 있으며, other party, don't know, no answer은 아래에 위치해 있습니다. 따라서 principled 하다고 생각합니다.
+
+```{r}
+ggplot(gss_cat) + geom_bar(mapping = aes(x = relig)) + coord_flip()
+```
+
+relig의 level은 특정 체계에 따라 정리되어 있다고 생각하지 않습니다. 그래서 arbitrary합니다.
+
+
+```{r}
+ggplot(gss_cat) + geom_bar(mapping = aes(x = denom)) + coord_flip()
+```
+denom의 level은 특정 체계에 따라 정리되어 있다고 생각하지 않습니다. 그래서 arbitrary합니다.
+
+
+# Textbook 15.5.1
+## Problem 1
+```{r}
+gss_cat %>%
+  mutate(partyid = fct_collapse(partyid,
+    other = c("No answer", "Don't know", "Other party"),
+    rep = c("Strong republican", "Not str republican"),
+    ind = c("Ind,near rep", "Independent", "Ind,near dem"),
+    dem = c("Not str democrat", "Strong democrat")
+  )) %>% group_by(year) %>% count(year, partyid) %>% mutate(prop = n / sum(n)) %>% ggplot() + geom_line(mapping = aes(x = year, y = prop, color = partyid))
+```
+
+republican 은 시간이 지남에 따라 감소했으며, independent는 줄어들다가 다시 증가했습니다. 그리고 democrat은 약간의 증감은 있으나 큰 차이를 보이지는 않습니다.
+
+# Textbook 16.2.4
+## Problem 2
+```{r}
+today(tzone = "UTC")
+```
+
+tzone은 현재 시간을 알고 싶은 지역을 특정합니다. 지역에 따라 날짜가 다를 수 있으므로 시간대를 지정해줄 필요가 있습니다. tzone의 default는 컴퓨터의 timezone입니다.
+
+
+# Textbook 16.3.4
+## Problem 6
+```{r}
+diamonds %>%
+  ggplot() +
+  geom_histogram(mapping = aes(x = carat), binwidth = 0.01)
+```
+
+```{r}
+diamonds %>%
+  ggplot() +
+  geom_histogram(mapping = aes(x = carat), binwidth = 0.01) + coord_cartesian(xlim = c(0, 2.5))
+```
+
+```{r}
+flights %>% mutate(minutes = sched_dep_time %% 100) %>% ggplot() +
+  geom_histogram(mapping = aes(x = minutes), binwidth = 1)
+```
+
+두 그래프 모드 특정 값에 집중적으로 몰려있습니다.  carat의 경우에는 0.25, 0.5, 1, 1.25, 1.5 와 같이 0.25 차이가 나는 값들이고 sched_dep_time은 0, 30, 60 과 같은  5의 배수들입니다. 이는 사람들이 선호하는 시간이나 캐럿의 단위가 반영된 결과라고 생각됩니다.
+
+# Textbook 16.4.5
+## Problem 4
+
+```{r}
+korean <- function(x){
+ year(today()) - year(x) + 1
+}
+  
+world <- function(x){
+ (x %--% today()) %/% years(1)
+}
+
+korean(ymd("2002,11,19"))
+world(ymd("2002,11,19"))
+```

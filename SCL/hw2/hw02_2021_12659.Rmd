@@ -1,0 +1,525 @@
+---
+title: "R Notebook"
+output:
+  pdf_document:
+    latex_engine: xelatex
+  html_notebook: default
+  html_document: default
+mainfont: NanumGothic
+------
+
+
+# import libraray
+
+```{r}
+library(tidyverse)
+library(nycflights13)
+library(quantmod)
+```
+
+# Textbook 5.2.4
+
+## Problem 1
+
+```{r}
+filter(flights, arr_delay >= 120)
+```
+
+```{r}
+filter(flights, dest %in% c("IAH", "HOU"))
+```
+
+```{r}
+filter(flights, carrier %in% c("UA", "AA", "DL"))
+```
+
+```{r}
+filter(flights, month %in% c(7:9))
+```
+
+```{r}
+filter(flights, arr_delay >= 120, dep_delay<=0)
+```
+
+```{r}
+filter(flights, arr_delay >= 60, arr_delay == dep_delay)
+```
+
+```{r}
+filter(flights, dep_time <= 600 | dep_time == 2400 )
+```
+
+## Problem 4
+
+```{r}
+NA^0
+NA | TRUE
+NA & FALSE
+NA * 0
+```
+
+NA는 알지 못하는 값을 의미한다. 따라서 NA는 어떤 숫자든지 가능하다. 그리고 r에서는 0과 무한을 포함한 모든 수의 0제곱은 1이다.`NA ^ 0` 는 NA를 알지 못하더라도 1이다. '\|'연산자는 'or'을 의미한다. 'or'은 하나라도 TRUE이면 식 전체가 TRUE가 된다. 그래서 NA값이 참이든 거짓이든 상관없이 한 값이 TRUE이므로 `NA | TRUE`는 TRUE이다.'&'연산자는 'and'를 의미한다. 'and'는 오직 모든 값이 TRUE일 때만 TRUE가 된다. 그래서 NA값이 참이든 거짓이든 상관없이 한 값이 FALSE이므로 `NA & FALSE`는 FALSE이다. NA는 어떤 수든지 될 수 있다. NA의 값이 유한한 수라면, 수식의 값은 0이 될 것이다. 하지만, 만약 무한이라면 그 값은 NaN이 된다.
+
+```{r}
+Inf*0
+```
+
+# Textbook 5.3.1
+
+## Problem 2
+
+```{r}
+arrange(flights, desc(dep_delay))
+
+```
+
+가장 지연된 비행기는 HA51이다. 그 비행기는 tailnum이 N384HA이고 2013 1월 9일에 JFK에서 출발하여 HNL에 도착했다.
+
+```{r}
+arrange(flights, dep_delay)
+```
+
+가장 빨리 떠난 비행기는 B697이다. 그 비행기는 tailnum이 N592JB이고 2013 12월 7일에 JFK에서 출발하여 DEN에 도착했다.
+
+# Textbook 5.4.1
+
+## Problem 1
+
+```{r}
+select(flights, dep_time, dep_delay, arr_time, arr_delay)
+```
+
+```{r}
+select(flights, dep_time:arr_delay)
+```
+
+```{r}
+select(flights, 4:9)
+```
+
+```{r}
+select(flights, 4, 6, 7, 9)
+```
+
+```{r}
+select(flights, starts_with("dep"), starts_with("arr"))
+```
+
+# Textbook 5.5.2
+
+## Problem 1
+
+```{r}
+flights_minute <- mutate(flights, dep_time_minutes = dep_time %/% 100 * 60 + dep_time %% 100, sched_dep_time_minutes = sched_dep_time %/% 100 * 60 + sched_dep_time %% 100 )
+flights_minute
+```
+
+## Problem 4
+
+```{r}
+flights_delay <- mutate(flights, dep_delay_rank = min_rank(desc(dep_delay)))
+flights_delay <- arrange(flights_delay, dep_delay_rank)
+flights_delay
+```
+
+가장 지연된 10개의 비행기는 위와 같다.
+
+## Problem 5
+
+```{r}
+1:3 + 1:10
+```
+
+'longer object length is not a multiple of shorter object length '라는 경고메시지와 함께' 2 4 6 5 7 9 8 10 12 11'이 출력됩니다. 두 벡터를 더하기 위해 더 짧은 길이를 가진 벡터를 반복하여 더 긴 벡터와의 길이를 맞춥니다. 하지만 긴 벡터가 짧은 벡터의 배수가 아니므로 경고메세지가 나옵니다. 위 수식에서는 1:3이 3번 반복되어 이용되고 마지막으로 벡터의 첫번째 요소인 다시 사용되어 1:10과 더해졌습니다.
+
+# Textbook 5.6.7
+
+## Problem 5
+
+```{r}
+flights %>% group_by(carrier) %>% summarise(arr_delay = mean(arr_delay, na.rm = TRUE)) %>% arrange(desc(arr_delay))
+```
+
+carrier로 그룹화한후 지연시간의 평균을 구했을 때, 평균지연시간이 가장 큰 carrier은 F9이었습니다.
+
+```{r}
+flights %>% summarise(n_distinct(carrier), n_distinct(dest), n_distinct(origin))
+```
+
+flights 데이터의 경우에는 16개의 항공사와 105개의 도착지와 3개의 출발지가 들어 있습니다. 도착지의 경우 너무 다양하므로 각 노선별 지연과 항공사별 지연을 비교하여 지연의 원인이 공항인지 항공사인지 밝히는 것은 어렵다고 생각합니다. 그럼에도 비교를 위해 출발지별 평균 지연과 항공사별 평균 지연을 비교하였습니다.
+
+```{r}
+flights %>%
+  group_by(carrier) %>%
+  mutate(carrier_delay = mean(dep_delay, na.rm = TRUE)) %>%
+  group_by(carrier, origin) %>%
+  mutate(origin_delay = mean(dep_delay, na.rm = TRUE), deviations = origin_delay - carrier_delay) %>%
+  summarise(mean_deviations = abs(mean(deviations)), carrier_delay = mean(carrier_delay), origin_delay = mean(origin_delay)) %>% arrange(desc(mean_deviations))
+```
+
+대부분의 경우에 편차가 크지 않습니다. 따라서, 항공사와 공항이 지연에 ㅊ 미치는 영향을 분리하여 생각하는 것은 어렵습니다. 하지만, 편차가 큰 일부 경우를 생각한다면, 대부분 출발지가 EWR인 경우입니다. 따라서, 지연에 영향을 주는 것은 공항일 가능성이 높습니다.
+
+# Textbook 5.7.1
+
+## Problem 4
+
+```{r}
+flights %>% select(dest, arr_delay) %>% group_by(dest) %>%
+  filter(arr_delay > 0) %>%
+  mutate(total_delay = sum(arr_delay, na.rm = TRUE),
+         prop_delay = arr_delay / total_delay)
+```
+
+dest와 arr_delay 에 대한 정보가 필요하므로 해당 column만 select 해준 뒤에, `filter(arr_delay > 0)`으로 캔슬된 경우는 제외하였다. 그리고 총 지연과 지연 비율을 계산하여 mutate하였다.
+
+# Textbook 7.3.4
+
+## Problem 2
+
+```{r}
+price <- ggplot(data = diamonds, mapping = aes(x = price))
+price + geom_histogram(binwidth = 1000)
+```
+
+binwidth를 1000으로 설정하여 매우 단순화한 히스토그램을 그려보았을 때, 오른쪽 꼬리 분포를 보임을 확인할 수 있었습니다.
+
+```{r}
+
+price + geom_histogram(binwidth = 20)
+```
+
+binwidth를 20으로 설정하고 히스토그램을 그렸을 때, 많은 spike를 관측할 수 있었고 5000보다 작은 값에 치우져져 있는 걸 확인할 수 있습니다.
+
+```{r}
+price + geom_histogram(binwidth = 10) + coord_cartesian(xlim = c(1000, 2000))
+```
+
+가격을 1000\~2000만 그려보았을 때, 1500\$ 부근에는 아예 값이 없는 것을 확인 할 수 있었습니다.
+
+```{r}
+price + geom_histogram(binwidth = 10) + coord_cartesian(xlim = c(0, 500))
+```
+
+또한, 300$ 이하의 다이아몬드도 없음을 확인할 수 있었습니다.
+
+```{r}
+price + geom_histogram(binwidth = 1) + coord_cartesian(xlim = c(0, 5000))
+```
+
+binwidth를 1까지 낮추었을 때, spike가 극단적이게 그려지는 것을 확인 할 수 있었습니다. 다이아몬드를 판매하는 특정 가격들이 정해져 있다고 생각할 수 있습니다.
+
+# Textbook 7.5.1.1
+
+## Problem 1
+
+```{r}
+flights %>% 
+  mutate(
+    cancelled = is.na(dep_time),
+    sched_hour = sched_dep_time %/% 100,
+    sched_min = sched_dep_time %% 100,
+    sched_dep_time = sched_hour + sched_min / 60
+  ) %>% 
+  ggplot(mapping = aes(x= cancelled, y = sched_dep_time)) + 
+    geom_boxplot()
+```
+
+박스 플롯을 사용하여 시각화 하였습니다.
+
+## Problem 2
+diamonds에는 price에 영향을 미칠만한 변수로 carat, cut, color, clarity가 있습니다.
+
+-carat
+```{r}
+ggplot(data = diamonds) + geom_point(aes(x = carat, y = price))
+```
+양의 상관관계가 있다고 생각됩니다.
+-cut
+```{r}
+ggplot(data = diamonds) + geom_boxplot(aes(x = cut, y = price))
+```
+상관관계가 있다고 말하기 어려울 것 같습니다. 아주 약한 음의 상관관계가 있을 것 같습니다. 
+
+-clarity
+```{r}
+ggplot(data = diamonds) + geom_boxplot(aes(x =clarity, y = price))
+```
+약한 음의 상관관계가 있습니다.
+
+-color
+```{r}
+ggplot(data = diamonds) + geom_boxplot(aes(x = color, y = price))
+```
+약한 음의 상관관계가 있습니다. color은 D가 best입니다. price에 가장 영향을 많이 주는 변수를 carat입니다.
+
+```{r}
+ggplot(data = diamonds) + geom_boxplot(aes(x = cut, y = carat))
+```
+
+캐럿과 컷사이에는 음의 상관관계가 있습니다. 크기가 큰 다이아몬드라면 컷이 이상적이지 않아도 팔리지만 크기가 작다면 컷에 더 신경써야하기 때문이라고 생각합니다.   
+# Textbook 7.5.2.1
+
+## Problem 2
+
+```{r}
+flights %>% group_by(dest, month) %>% summarise(mean_delay = mean(dep_delay, na.rm= TRUE)) %>% ggplot() + geom_tile(mapping = aes(x = month, y = dest, fill =  mean_delay))
+```
+
+그래프를 읽기 어렵게 만드는 요소들은 다음과 같습니다. 1. x축은 month를 나타내지만, 위 그래프에서는 소수로 표현되어 있습니다. 2. 데이터에 결측치가 포함되어 있어 그래프를 해석하기 어렵게 만듭니다.
+
+```{r}
+flights %>% group_by(dest, month) %>% summarise(mean_delay = mean(dep_delay, na.rm= TRUE)) %>%  ungroup() %>%
+  group_by(dest) %>% mutate(count_month = n())%>%
+  ggplot() + geom_tile(mapping = aes(x = factor(month), y = reorder(dest, count_month), fill =  mean_delay)) + labs(x = "month", y = "destination")
+```
+1번의 문제를 해결하기 위해 `factor(month)`으로 벡터를 팩터와 하였습니다. 2번의 문제를 해결하기 위해 목적지마다 항공편의 개수를 세어 많은 순서대로 정렬하여 나타나도록 하였습니다.
+
+# Textbook 7.5.3.1
+
+##Problem 4
+```{r}
+ggplot(data = diamonds) + geom_hex(mapping = aes(x = carat, y = price)) + facet_wrap(~cut)
+```
+```{r}
+ggplot(data = diamonds) + geom_boxplot(mapping = aes(x = cut_number(carat, 20), y = price, color = cut))
+```
+```{r}
+ggplot(data = diamonds) + geom_boxplot(mapping = aes(x = cut_width(carat, 0.1), y = price, color = cut))
+```
+
+# Textbook 10.5
+
+## Problem 2
+```{r}
+df <- data.frame(abc = 1, xyz = "a")
+
+```
+
+```{r}
+df2 <- tibble(abc = 1, xyz = "a")
+df$x
+df2$x
+```
+data frame에서 $ 연산자는 뒤따르는 값으로 시작하는 열을 불러올 수 있었지만 tibble에서는 그렇지 못합니다. 그래서   
+`df2$xyz`로 xyz column에 해당하는 값을 불러올 수 있습니다.
+```{r}
+df2$xyz
+```
+```{r}
+df[, "xyz"]
+df2[, "xyz"]
+```
+data frame에서는 []을 사용하여 하나의 column을 불러오면, 벡터로 출력됩니다. 하지만 tibble에서는 tibble의 한 column을 출력합니다.
+
+```{r}
+df[, c("abc", "xyz")]
+df2[, c("abc", "xyz")]
+```
+data frame에서 []을 사용하여 2개 이상의 column을 불러오면, data frame으로 출력됩니다.
+
+
+## Problem 4
+```{r}
+annoying <- tibble(
+  `1` = 1:10,
+  `2` = `1` * 2 + rnorm(length(`1`))
+)
+
+```
+```{r}
+annoying$'1'
+```
+```{r}
+ggplot() + geom_point(data = annoying, mapping = aes(x = `1`, y = `2`))
+```
+```{r}
+annoying$`3` <- annoying$`2` / annoying$`1`
+annoying
+```
+```{r}
+annoying %>% rename(one = `1`, two = `2`, three = `3`)
+```
+
+
+# Textbook 11.2.2
+
+## Problem 5
+```{r}
+read_csv("a,b\n1,2,3\n4,5,6")
+```
+a, b 두개의 열만 생성되어 첫 행의 2,3이 각각 저장되는 것이 아니라 23으로 저장됩니다.
+```{r}
+read_csv("a,b,c\n1,2\n1,2,3,4")
+```
+열은 3개이지만 첫 행의 값은 2개이므로 마지막은 na가 됩니다. 그리고 2번째 행은 값이 4개이므로 마지막 2개는 합쳐져 34가 됩니다.
+
+```{r}
+read_csv("a,b\n\"1")
+```
+tibble이 출력되지 않습니다.
+
+```{r}
+read_csv("a,b\n1,2\na,b")
+```
+두번째 행이 문자열이므로 첫번째 행도 문자열로 저장되었습니다.
+
+```{r}
+read_csv("a;b\n1;3")
+```
+`read_csv()`는 ,로 구분하므로 ;는 문자열로 처리되었습니다. 
+
+# Textbook 11.3.5
+
+## Problem 4
+`read_csv()`는 쉼표로 구분됩니다. `read_csv2()`세미콜론으로 구분됩니다.
+## Problem 7
+```{r}
+d1 <- "January 1, 2010"
+d2 <- "2015-Mar-07"
+d3 <- "06-Jun-2017"
+d4 <- c("August 19 (2015)", "July 1 (2015)")
+d5 <- "12/30/14" # Dec 30, 2014
+t1 <- "1705"
+t2 <- "11:15:10.12 PM"
+```
+```{r}
+parse_date(d1, "%B %d, %Y")
+parse_date(d2, "%Y-%b- %d")
+parse_date(d3, "%d-%b-%Y")
+parse_date(d4, "%B %d (%Y)")
+parse_date(d5, "%m/%d/%y")
+parse_time(t1, "%H%M")
+parse_time(t2, "%I:%M:%OS %p")
+```
+
+# Extra Questions
+## Q1
+```{r}
+options("getSymbols.warning4.0"=FALSE) # to suppress warnings 
+skt <- getSymbols("017670.KS", auto.assign=FALSE)  # KOSPI tick number is 017670
+head(skt)
+```
+```{r}
+plot(skt$`017670.KS.Close`)
+```
+### a
+
+```{r}
+df_skt <- data.frame(skt)
+df_skt <- rownames_to_column(df_skt, var = "date")
+tb_skt <- as_tibble(skt)
+```
+```{r}
+tb_skt$date <- base::as.Date(df_skt$date, '%Y-%m-%d')
+tb_skt
+```
+```{r}
+ggplot(data = tb_skt, mapping = aes(x = date, y = `017670.KS.Close`)) + geom_line()
+```
+
+### b
+```{r}
+getFX('KRW/USD', Sys.Date()-180, Sys.Date())
+getFX('KRW/JPY', Sys.Date()-180, Sys.Date())
+USD <- data.frame(KRWUSD)
+JPY <- data.frame(KRWJPY)
+```
+```{r}
+USD <- rownames_to_column(USD, var = "date")
+USD$date <- base::as.Date(USD$date, '%Y-%m-%d')
+JPY <- rownames_to_column(JPY, var = "date")
+JPY$date <- base::as.Date(JPY$date, '%Y-%m-%d')
+```
+```{r}
+inner_join(tb_skt, USD, by = "date") %>% inner_join(JPY, by="date") %>% select(`017670.KS.Adjusted`, date, `KRW.USD`, `KRW.JPY`) %>% mutate(`017670.KS.Adjusted.USD` = `017670.KS.Adjusted` * `KRW.USD`, `017670.KS.Adjusted.JPY` = `017670.KS.Adjusted` * `KRW.JPY`) %>% gather(`017670.KS.Adjusted`, `017670.KS.Adjusted.USD`, `017670.KS.Adjusted.JPY`, key = "Currency", value = "Price") %>% ggplot(mapping = aes(x = date, y= Price, color = Currency)) + geom_line()
+```
+
+1원당 달리가치와 엔화가치를 각각 USD와 JPY에 data.frame으로 저장한 후, rowname을 date라는 column에 추가하였습니다. 그 후에 데이터타입을 date로 변환하였습니다. 그리고 tb_skt와 USD, JPY의 교집합을 구하여 같은 날짜를 가진 데이터를 만들었습니다. 환율과 ADJUSTED된 금액을 곱하여 JPY와 USD 통화량으로 변환하였습니다. LONGFORM으로 변환하여 각 값에 어떤 나라의 가격인지를 추가하였고 이를 선그래프로 그렸습니다.
+
+
+## 2
+### a
+```{r}
+population <- read_csv("population.csv")
+```
+```{r}
+seoul2020<-population[3:27, c(1:2,43:50)]
+seoul2020
+```
+
+```{r}
+df_seoul2020 <- data.frame(seoul2020)
+```
+
+### b
+```{r}
+seoul2020tidy <- column_to_rownames(seoul2020, var = "행정구역별(읍면동)")
+colnames(seoul2020tidy)[2:9] <- unlist(population[1,3:10])
+
+```
+seoul2020이 갖고 있는 문제점은 두가지입니다.
+-첫열이 행이름이 되어야한다.
+-열이름이 나타내는 정보가 불분명하다.
+
+그래인서  `column_to_rownames()`와 `colnames()`을 사용했습니다.
+
+### c 
+
+```{r}
+seoul2020tidy$`총인구(명)` <- parse_number(seoul2020tidy$`총인구(명)`)
+seoul2020tidy$`총인구_남자(명)` <- parse_number(seoul2020tidy$`총인구_남자(명)`)
+seoul2020tidy$`총인구_여자(명)` <- parse_number(seoul2020tidy$`총인구_여자(명)`)
+seoul2020tidy$`총인구_성비` <- parse_double(seoul2020tidy$`총인구_성비`)
+seoul2020tidy$`내국인(명)` <- parse_number(seoul2020tidy$`내국인(명)`)
+seoul2020tidy$`내국인_남자(명)` <- parse_number(seoul2020tidy$`내국인_남자(명)`)
+seoul2020tidy$`내국인_여자(명)` <- parse_number(seoul2020tidy$`내국인_여자(명)`)
+seoul2020tidy$`내국인_성비` <- parse_double(seoul2020tidy$`내국인_성비`)
+seoul2020tidy
+```   
+### d
+```{r}
+pops <- unlist(seoul2020tidy[, 2])
+hist(pops)
+```
+```{r}
+hist(rnorm(25, mean = mean(pops), sd = sd(pops)))
+```
+히스토그램이 유사한 모양을 그리지 않는다.
+
+### e
+
+```{r}
+mean(pops)
+mean(sample(pops, 10, replace = TRUE))
+mean(sample(pops, 10, replace = TRUE))
+```
+sample vector의 평균은 pops의 평균과 다르다. 또한, sample vector 끼리의 평균도 큰 차이를 보인다. 그 이유는 관측단위별 총인구수간에 차이가 있기 때문에, 어떤 값이 sampling 되느냐에 따라 평균이 달라지기 때문이다.
+### f
+```{r}
+mean(replicate(100, mean(sample(pops, 10, replace = TRUE))))
+mean(replicate(1000, mean(sample(pops, 10, replace = TRUE))))
+mean(replicate(10000, mean(sample(pops, 10, replace = TRUE))))
+```
+표본평균의 평균을 구하는 과정입니다. 표본평균의 수가 늘어날수록 모집단의 평균과 비슷합니다.
+
+### g
+```{r}
+mean(sample(pops, 10, replace = TRUE))
+mean(sample(pops, 25, replace = TRUE))
+mean(sample(pops, 100, replace = TRUE))
+```
+표본의 수가 늘어날 수록 꼭 모평균과 가까워진다고 말하기는 어렵습니다. 하지만 여러번 실행했을 때 표본평균이 변화하는 범위가 모평균 근처에서 표본이 늘어날수록 가장 좁았습니다.
+
+### h
+```{r}
+hist(replicate(10000, mean(sample(pops, 10, replace = TRUE))))
+hist(replicate(10000, mean(sample(pops, 25, replace = TRUE))))
+hist(replicate(10000, mean(sample(pops, 100, replace = TRUE))))
+```
+모집단과 유사한 분포를 보입니다. 또한, 표본의 크기가 클 수록 정규분포와 비슷합니다. 이를 중심극한정리라고 합니다.
+
+### i
+```{r}
+quantile(replicate(1000, mean(sample(pops, 10, replace = TRUE))))
+```
+서울 인구 데이터에서 10의 표본을 무작위 추출하여 평균을 구하는 일을 1000번 반복했을 때의 분위수는 위와 같습니다.  1000번 반복했을 때의 최솟값보다도 평균이 낮으니 평균이 204885인 10개의 데이터 셋은 서울시 인구로부터 얻어진 데이터가 아니라고 생각합니다. 

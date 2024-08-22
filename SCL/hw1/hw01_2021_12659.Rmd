@@ -1,0 +1,261 @@
+---
+title: "hw01_2021_12659"
+output: html_document
+date: "2022-09-19"
+---
+
+# Textbook 3.2.4
+
+## Problem 1
+
+```{r}
+library("tidyverse")
+ggplot(data=mpg)
+
+```
+
+It prints empty plot. 
+
+## Problem 4
+
+```{r}
+ggplot(data=mpg) + geom_point(mapping = aes(x=hwy, y = cyl))
+```
+
+## Problem 5
+
+```{r}
+ggplot(data = mpg) + geom_point(mapping = aes(x=class, y = drv))
+```
+
+Since both variables are categorical variables, the value of the variable is limited. Therefore, the relationship between the two variables was not diverse, so a useful scatterplot was not drawn.
+
+# Textbook 3.3.1
+
+## Problem 1
+
+```{r}
+ggplot(data = mpg) + 
+  geom_point(mapping = aes(x = displ, y = hwy), color = "blue")
+```
+
+Changing the color of the dots does not contain information about the variables, but rather changes the appearance of the plot. Therefore, it is necessary to change the color manually.
+
+## Problem 3
+
+```{r}
+# map a continous variable to color
+ggplot(data = mpg) + 
+  geom_point(mapping = aes(x = displ, y = hwy, colour = cty))
+
+```
+
+
+```{r}
+# map a continous variable to size
+ggplot(data = mpg) + 
+  geom_point(mapping = aes(x = displ, y = hwy, size = cty))
+```
+
+```{r}
+# map a continous variable to shape
+# error
+# ggplot(data = mpg) + geom_point(mapping = aes(x = displ, y = hwy, shape = cty))
+
+```
+
+An error message prints when trying to map the continuous variables to shape.
+
+In the case of categorical variables, color, size, and shape are represented according to each variable value. On the other hand, in the case of a continuous function, a range is automatically set. And color and size are displayed according to the range and shape cannot be mapped to a continuous variable.
+
+# Textbook 3.5.1
+
+## Problem 2
+
+```{r}
+ggplot(data = mpg) + 
+  geom_point(mapping = aes(x = drv, y = cyl))
+```
+```{r}
+ggplot(data = mpg) +
+  geom_point(mapping = aes(x = hwy, y = cty)) +
+  facet_grid(drv ~ cyl)
+```
+
+In facets, an empty cell is the part where there are no observations of drv and cyl. These are the same as the spotless parts of the scatterplot of drv and cyl.
+
+
+## Problem 4
+
+```{r}
+ggplot(data = mpg) + 
+  geom_point(mapping = aes(x = displ, y = hwy)) + 
+  facet_wrap(~ class, nrow = 2)
+```
+
+```{r}
+ggplot(data = mpg) + 
+  geom_point(mapping = aes(x = displ, y = hwy, color = class))
+```
+
+The advantage of facets is that various graphs can be captured on one screen, making it easy to grasp the difference in the distribution of each category. In addition, the values in different categories are not overlapped. Also, it is difficult to recognize differences between colors when category values become too diverse. On the other hand, the disadvantage of facets is that it is difficult to compare the relationship between categories because the graphs are different for each category. 
+For large amounts of data, facets that classify them according to criteria will be convenient to see.  
+
+# Textbook 3.6.1
+
+## Problem 5
+
+```{r}
+ggplot(data = mpg, mapping = aes(x = displ, y = hwy)) + 
+  geom_point() + 
+  geom_smooth()
+
+```
+
+```{r}
+ggplot() + 
+  geom_point(data = mpg, mapping = aes(x = displ, y = hwy)) + 
+  geom_smooth(data = mpg, mapping = aes(x = displ, y = hwy))
+```
+
+It doesn't look different. This is because the geom_point() function and the geom_smooth() function use the same data and mapping information.
+
+## Problem 6
+
+```{r}
+ggplot(data = mpg, mapping = aes(x = displ, y = hwy)) + 
+  geom_point() + 
+  geom_smooth(se = FALSE)
+```
+
+```{r}
+ggplot(data = mpg, mapping = aes(x = displ, y = hwy)) + 
+  geom_point() + geom_smooth(mapping = aes(group = drv), se = FALSE) 
+```
+
+```{r}
+ggplot(data = mpg, mapping = aes(x = displ, y = hwy, color = drv)) + 
+  geom_point() + geom_smooth(mapping = aes(group = drv), se = FALSE) 
+```
+
+```{r}
+ggplot(data = mpg, mapping = aes(x = displ, y = hwy)) + 
+  geom_point(mapping = aes(color = drv)) + geom_smooth(se = FALSE) 
+```
+
+```{r}
+ggplot(data = mpg, mapping = aes(x = displ, y = hwy)) + 
+  geom_point(mapping = aes(color = drv)) + geom_smooth(mapping = aes(linetype = drv),se = FALSE)
+```
+
+```{r}
+ggplot(data = mpg, mapping = aes(x = displ, y = hwy, color = drv)) +  geom_point(color = "white", size = 3) + geom_point()
+```
+
+# Textbook 3.7.1
+
+## Problem 5
+
+```{r}
+ggplot(data = diamonds) + 
+  geom_bar(mapping = aes(x = cut, y = after_stat(prop)))
+```
+
+```{r}
+ggplot(data = diamonds) + 
+  geom_bar(mapping = aes(x = cut, fill = color, y = after_stat(prop)))
+```
+
+If "group = 1" is not set, the ratio of cut within each group is calculated. So the bar charts all have the same height of 1. So you have to write "group = 1" to tell them that all data is one group.
+
+# Textbook 3.8.1
+
+## Problem 1
+
+```{r}
+ggplot(data = mpg, mapping = aes(x = cty, y = hwy)) +
+  geom_point()
+```
+Since there are repeatedly observed values between cty and hwy, there is a problem that the points of the graph are overlapped.
+
+```{r}
+ggplot(data = mpg, mapping = aes(x = cty, y = hwy)) +
+  geom_point(position = "jitter")
+```
+To solve this problem, a jitter may be used. Using jitter can intentionally create errors so that more observations appear on the graph.
+
+## Problem 4
+```{r}
+ggplot(data = mpg, mapping = aes(x = class, y = hwy)) + 
+  geom_boxplot()
+```
+```{r}
+ggplot(data = mpg, mapping = aes(x = class, y = hwy)) + 
+  geom_boxplot(position = "identity")
+```
+
+```{r}
+ggplot(data = mpg, mapping = aes(x = class, y = hwy)) + 
+  geom_boxplot(position = "dodge")
+```
+```{r}
+# ggplot(data = mpg, mapping = aes(x = class, y = hwy)) + geom_boxplot(position = "fill")
+# error
+```
+```{r}
+# ggplot(data = mpg, mapping = aes(x = class, y = hwy)) + geom_boxplot(position = "stack")
+# error 
+```
+```{r}
+# ggplot(data = mpg, mapping = aes(x = class, y = hwy)) + geom_boxplot(position = "jitter")
+# error 
+```
+
+```{r}
+?geom_boxplot()
+```
+When I draw graphs by changing the position of the boxplot, the identity and Dodge were the same as the basic graph. So, when I checked the description of geom_boxplot() on the help page, I confirmed that "dodge2" is the default setting for position.
+
+# Textbook 3.9.1
+## Problem 4
+```{r}
+ggplot(data = mpg, mapping = aes(x = cty, y = hwy)) +
+  geom_point() + 
+  geom_abline() +
+  coord_fixed()
+```
+The abline() function is a function that creates a straight line. If the code_fixed() is not applied, there is a problem that the slope of the line varies according to the ratio. And there is a positive correlation between highway and city mpg.
+
+# Textbook 28.2.1
+
+## Problem 1
+```{r}
+ggplot(mpg, aes(displ, hwy, colour = class)) +
+  geom_point() +
+  geom_smooth(method = "lm", se = FALSE) +
+  labs(
+    title = "Fuel Efficiency Mostly Varies by Car Class",
+    subtitle = "Subcompact caries fuel efficiency varies by engine size",
+    caption = "Data from fueleconomy.gov",
+    y = "Highway Miles per Gallon",
+    x = "Engine Displacement",
+    colour = "Car type")
+```
+
+# Textbook 28.4.4
+
+## Problem 1
+ 
+```{r}
+df <- tibble(
+  x = rnorm(10000),
+  y = rnorm(10000)
+)
+ggplot(df, aes(x, y)) + geom_hex() + scale_colour_gradient(low = "white", high = "red") + coord_fixed()
+
+```
+The default setting don't override. Since the geom_hex function is a function that creates a polygon, it can change the color by using  "fill", not "colour".
+
+```{r}
+ggplot(df, aes(x, y)) + geom_hex() + scale_fill_gradient(low = "white", high = "red") + coord_fixed()
+```
